@@ -5,8 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="style.css">
     <link rel="icon" href="oreiller.png">
-    <title>Coût-Sain</title>
-    
+    <title>Coût-Sain</title>   
 </head>
 <body>
 <h1>Coût-Sain</h1>
@@ -24,6 +23,10 @@
         <option value="semestre">Semestriel</option>
         <option value="annee">Annuel</option>
     </select><br>
+    <label>Type d'amortissement :</label><br>
+    <input type="radio" name="amortissementType" value="constant" checked> Annuité constant
+    <input type="radio" name="amortissementType" value="lineaire"> Amortissement constant
+    <br><br> 
     <button onclick="calculateAmortization()">Calculer</button>
 </div>
 <div id="amortissement"></div>
@@ -34,6 +37,7 @@
         const interest = parseFloat(document.getElementById("interet").value) / 100;
         const term = parseInt(document.getElementById("duree").value);
         const frequency = document.getElementById("paye").value;
+        const amortizationType = document.querySelector('input[name="amortissementType"]:checked').value;
 
         const n = frequency === "mois" ? term * 12 :
             frequency === "trimestre" ? term * 4 :
@@ -41,22 +45,36 @@
                     term;
         const i = interest / (frequency === "annee" ? 1 : frequency === "semestre" ? 2 : frequency === "trimestre" ? 4 : 12);
 
-        const annuity = loan * (i / (1 - Math.pow(1 + i, -n)));
+        const annuityF = loan * (i / (1 - Math.pow(1 + i, -n)));
 
         let remainingBalance = loan;
+        let fixe = remainingBalance / n;
         let totalInterest = 0;
         let totalPrincipal = 0;
         let totalAnnuity = 0;
         let amortizationTableHTML = "<table><tr><th>Périodes</th><th>Capital restant dû en début de période</th><th>Intérêts de la période</th><th>Amortissement du capital</th><th>Annuité constante</th><th>Capital restant dû en fin de période</th></tr>";
         for (let period = 1; period <= n; period++) {
-            const interestPayment = remainingBalance * i;
-            const principalPayment = annuity - interestPayment;
-            const newBalance = remainingBalance - principalPayment
-            amortizationTableHTML += `<tr><td>${period}</td><td>${remainingBalance.toFixed(2)}</td><td>${interestPayment.toFixed(2)}</td><td>${principalPayment.toFixed(2)}</td><td>${annuity.toFixed(2)}</td><td>${newBalance.toFixed(2)}</td></tr>`;
-            remainingBalance -= principalPayment;
-            totalInterest += interestPayment;
-            totalPrincipal += principalPayment;
-            totalAnnuity += annuity;
+            if(amortizationType === 'constant') {
+                const interestPayment = remainingBalance * i;
+                const principalPayment = annuityF - interestPayment;
+                const newBalance = remainingBalance - principalPayment
+                amortizationTableHTML += `<tr><td>${period}</td><td>${remainingBalance.toFixed(2)}</td><td>${interestPayment.toFixed(2)}</td><td>${principalPayment.toFixed(2)}</td><td>${annuityF.toFixed(2)}</td><td>${newBalance.toFixed(2)}</td></tr>`;
+                remainingBalance -= principalPayment;
+                totalInterest += interestPayment;
+                totalPrincipal += principalPayment;
+                totalAnnuity += annuityF;
+            } else {
+                const interestPayment = remainingBalance * i;
+                const principalPayment = fixe;
+                const newBalance = remainingBalance - principalPayment;
+                const annuity = interestPayment + principalPayment;
+                amortizationTableHTML += `<tr><td>${period}</td><td>${remainingBalance.toFixed(2)}</td><td>${interestPayment.toFixed(2)}</td><td>${principalPayment.toFixed(2)}</td><td>${annuity.toFixed(2)}</td><td>${newBalance.toFixed(2)}</td></tr>`;
+                remainingBalance -= principalPayment;
+                totalInterest += interestPayment;
+                totalPrincipal += principalPayment;
+                totalAnnuity += annuity;
+            }
+            
         }
         amortizationTableHTML += `<tr><td colspan="2"><b>Total</b></td><td>${totalInterest.toFixed(2)}</td><td>${totalPrincipal.toFixed(2)}</td><td>${totalAnnuity.toFixed(2)}</td><td></td></tr>`;
         amortizationTableHTML += "</table>";
